@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "sample-core-twelve-factor-impl"
+version = "0.1.0"
+description = ""
+authors = ["ShiroUz"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+boto3 = "^1.26.155"
+uvicorn = {extras = ["standerd"], version = "^0.22.0"}
+fastapi = "^0.97.0"
+
+[tool.poetry.scripts]
+start = "sample-core-twelve-factor-impl.src.app:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

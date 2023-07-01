@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    image: python/sample/core
+    ports:
+      - "8080:80"
+    environment:
+      - ConfigApp=TwelveFactorApplication
+      - ConfigEnv=dev # ローカル環境はdev/AWS環境はst
+      - ConfigProfile=dummy
+      - ConfigClient=TwelveFactorAppClient
+      - ENV=local
+      # Local固有。本来であれば、ECS Task Roleに権限が付与されている。
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+      - AWS_DEFAULT_REGION=ap-northeast-1
+    depends_on:
+      localstack:
+        condition: service_healthy
+
+  localstack:
+    image: localstack/localstack:2.1.0
+    ports:
+      - "4566:4566" # LocalStack Gateway
+    environment:
+      - SERVICES=dynamodb
+      - DEFAULT_REGION=ap-northeast-1
+      - DEBUG=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - ${LOCALSTACK_VOLUME_DIR:-./docker/localstack/volume}:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+      # initilize
+      # appconfigは有料版のみしか使用できなかったので使わないことにする。
+      # https://localstack.cloud/features/
+      # - ./docker/localstack/appconfig/compose-volumes/etc/localstack/init/ready.d/init_appconfig.sh:/etc/localstack/init/ready.d/init_appconfig.sh
+      - ./docker/localstack/dynamodb/compose-volumes/etc/localstack/init/ready.d/init_dynamodb.sh:/etc/localstack/init/ready.d/init_dynamodb.sh
+    healthcheck:
+      test: awslocal dynamodb describe-table --table-name TwelveFactorDatastore --region ap-northeast-1 || exit 1
+      interval: 5s
+      timeout: 10s
+      retries: 30
